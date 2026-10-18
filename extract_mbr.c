@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include<stdlib.h>
 
 int main(void)
 {
@@ -12,21 +13,77 @@ int main(void)
     unsigned char buffer[16];
     size_t n;
     size_t offset = 0;
+    int total_bytes=64;
+    int r=4;
+    int c=16;
 
-    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-        // optional: print offset
-        printf("%08zx: ", offset);
+    int cnt=1; //byte count
+    int s_cnt=446; //starting count for partition tables
+    int e_cnt=511; //ending count for partition tables excluding last 2 bytes for siggy
 
-        for (size_t i = 0; i < n; i++)
-            printf("%02x ", buffer[i]);
 
-        printf("\n");
-        offset += n;
+
+    //declare a 2d array which will store our last 64 bytes containing partition data
+
+    unsigned char** p_table=malloc(r*sizeof(unsigned char*));
+    for(int i=0;i<r;i++)
+    {
+        p_table[i]=malloc(c*sizeof(unsigned char));
     }
 
+    //fill the array originally with 0s to prevent garbage values
+
+    for(int i=0;i<r;i++){
+        for(int j=0;j<c;j++)
+        {
+            p_table[i][j]='0';
+        }
+    }
+
+   
+        while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+           
+          printf("%08zx: ", offset);   
+         for (size_t k = 0; k < n; k++)
+                printf("%02x ", buffer[k]);
+
+           printf("\n");
+            offset += n;
+
+        for(int i=0;i<r;i++){
+        
+            for (size_t k = 0; k < n; k++){
+
+             if (cnt>=s_cnt && cnt<e_cnt)
+            {
+                p_table[i][k]=buffer[k];
+                printf("Count Value: {%d}",cnt);
+              //  printf("%02x ", buffer[k]);
+            }
+        
+             
+        }
+           
+            
+        }
+
+        cnt+=16;
+         
+    }
+    
     if (ferror(fp))
         perror("fread");
 
     fclose(fp);
+
+    printf("\n\n");
+    for(int i=0;i<r;i++)
+    {
+        for(int j=0;j<c;j++)
+        {
+            printf("%02x  ",p_table[i][j]);
+        }
+        printf("\n");
+    }
     return 0;
 }
